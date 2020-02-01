@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html>
   <head>
+     
     <meta charset="utf-8">
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
-    <title>Mashups with google.maps.Data</title>
+    <title>Flood Map</title>
     <style>
       html, body, #map { height: 100%; margin: 0; padding: 0; overflow: hidden; }
         .nicebox {
@@ -80,8 +81,17 @@
       <label id="data-label" for="data-value"></label>
       <span id="data-value"></span>
     </div>
+    <div class="nicebox" style="top: 70px; left: 540px; width: 300px; height: 30px;">
+  <input type="range" min="1" max="30" value="1" class="slider" id="myRange" onChange="updateTextInput(this.value);">
+  <output id="forecastDay" value="">+1 day forecast</output>
+</div>
     <div id="map"></div>
     <script>
+
+
+
+
+
       var mapStyle = [{
         'stylers': [{'visibility': 'off'}]
       }, {
@@ -93,7 +103,7 @@
         'elementType': 'geometry',
         'stylers': [{'visibility': 'on'}, {'color': '#bfd4ff'}]
       }];
-      var map;
+      var map, infoWindow;
       var censusMin = Number.MAX_VALUE, censusMax = -Number.MAX_VALUE;
 
       function initMap() {
@@ -104,6 +114,38 @@
           zoom: 4,
           styles: mapStyle
         });
+
+        infoWindow = new google.maps.InfoWindow;
+
+
+
+        // Try HTML5 geolocation.
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(function(position) {
+            var pos = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            };
+
+            infoWindow.setPosition(pos);
+            infoWindow.setContent('Location found.');
+            infoWindow.open(map);
+
+            var bounds = new google.maps.LatLngBounds();
+            map.fitBounds(bounds);
+            var listener = google.maps.event.addListener(map, "idle", function() {
+               if (map.getZoom() > 16) map.setZoom(16);
+               google.maps.event.removeListener(listener);
+            });
+
+            map.setCenter(pos);
+          }, function() {
+            handleLocationError(true, infoWindow, map.getCenter());
+          });
+        } else {
+          // Browser doesn't support Geolocation
+          handleLocationError(false, infoWindow, map.getCenter());
+        }
 
 
         // set up the style rules and events for google.maps.Data
@@ -122,6 +164,16 @@
         loadMapShapes();
 
       }
+
+      function handleLocationError(browserHasGeolocation, infoWindow, pos) {
+        infoWindow.setPosition(pos);
+        infoWindow.setContent(browserHasGeolocation ?
+                              'Error: The Geolocation service failed.' :
+                              'Error: Your browser doesn\'t support geolocation.');
+        infoWindow.open(map);
+      }
+
+
 
       /** Loads the state boundary polygons from a GeoJSON source. */
       function loadMapShapes() {
@@ -260,6 +312,24 @@
         // reset the hover state, returning the border to normal
         e.feature.setProperty('state', 'normal');
       }
+
+      var slider = document.getElementById("myRange");
+      var output = document.getElementById("demo");
+      var forecastDay = document.getElementById("forecastDay");
+
+
+      output.innerHTML = slider.value; // Display the default slider value
+
+
+      // Update the current slider value (each time you drag the slider handle)
+      slider.oninput = function() {
+        output.innerHTML = this.value;
+      }
+
+
+      function updateTextInput(val) {
+          document.getElementById('forecastDay').value='+'.concat(val, ' days forecast');
+        }
 
     </script>
     <script async defer
