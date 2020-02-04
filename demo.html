@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-     
+
     <meta charset="utf-8">
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
     <title>Flood Map</title>
@@ -89,9 +89,6 @@
     <script>
 
 
-
-
-
       var mapStyle = [{
         'stylers': [{'visibility': 'off'}]
       }, {
@@ -113,9 +110,13 @@
           center: {lat: 40, lng: -100},
           zoom: 4,
           styles: mapStyle
+
+
         });
 
         infoWindow = new google.maps.InfoWindow;
+
+
 
 
 
@@ -149,19 +150,30 @@
 
 
         // set up the style rules and events for google.maps.Data
-        map.data.setStyle(styleFeature);
+
+        //THIS LINE OF CODE MESSES UP EVERYTHING
+        // map.data.setStyle(styleFeature);
+
         map.data.addListener('mouseover', mouseInToRegion);
         map.data.addListener('mouseout', mouseOutOfRegion);
 
         // wire up the button
         var selectBox = document.getElementById('census-variable');
+
+
+
         google.maps.event.addDomListener(selectBox, 'change', function() {
           clearCensusData();
           loadCensusData(selectBox.options[selectBox.selectedIndex].value);
         });
 
         // state polygons only need to be loaded once, do them now
+
         loadMapShapes();
+        map.data.loadGeoJson('https://storage.googleapis.com/mapsdevsite/json/google.json');
+
+
+
 
       }
 
@@ -179,6 +191,8 @@
       function loadMapShapes() {
         // load US state outline polygons from a GeoJson file
         map.data.loadGeoJson('https://storage.googleapis.com/mapsdevsite/json/states.js', { idPropertyName: 'STATE' });
+
+
 
         // wait for the request to complete by listening for the first feature to be
         // added
@@ -330,6 +344,8 @@
       function updateTextInput(val) {
           document.getElementById('forecastDay').value='+'.concat(val, ' days forecast');
         }
+
+
 
     </script>
     <script async defer

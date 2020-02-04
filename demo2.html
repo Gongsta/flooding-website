@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+  <head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <title>Flood Map</title>
+    <style>
+      html, body, #map { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+        .nicebox {
+          position: absolute;
+          text-align: center;
+          font-family: "Roboto", "Arial", sans-serif;
+          font-size: 13px;
+          z-index: 5;
+          box-shadow: 0 4px 6px -4px #333;
+          padding: 5px 10px;
+          background: rgb(255,255,255);
+          background: linear-gradient(to bottom,rgba(255,255,255,1) 0%,rgba(245,245,245,1) 100%);
+          border: rgb(229, 229, 229) 1px solid;
+        }
+        #controls {
+          top: 10px;
+          left: 110px;
+          width: 360px;
+          height: 45px;
+        }
+        #data-box {
+          top: 10px;
+          left: 500px;
+          height: 45px;
+          line-height: 45px;
+          display: none;
+        }
+        #census-variable {
+          width: 360px;
+          height: 20px;
+        }
+        #legend { display: flex; display: -webkit-box; padding-top: 7px }
+        .color-key {
+          background: linear-gradient(to right,
+            hsl(5, 69%, 54%) 0%,
+            hsl(29, 71%, 51%) 17%,
+            hsl(54, 74%, 47%) 33%,
+            hsl(78, 76%, 44%) 50%,
+            hsl(102, 78%, 41%) 67%,
+            hsl(127, 81%, 37%) 83%,
+            hsl(151, 83%, 34%) 100%);
+          flex: 1;
+          -webkit-box-flex: 1;
+          margin: 0 5px;
+          text-align: left;
+          font-size: 1.0em;
+          line-height: 1.0em;
+        }
+        #data-value { font-size: 2.0em; font-weight: bold }
+        #data-label { font-size: 2.0em; font-weight: normal; padding-right: 10px; }
+        #data-label:after { content: ':' }
+        #data-caret { margin-left: -5px; display: none; font-size: 14px; width: 14px}
+    </style>
+  </head>
+  <body>
+    <div id="controls" class="nicebox">
+      <div>
+      <select id="census-variable">
+        <option value="https://storage.googleapis.com/mapsdevsite/json/DP02_0066PE">Percent of population over 25 that completed high
+        school</option>
+        <option value="https://storage.googleapis.com/mapsdevsite/json/DP05_0017E">Median age</option>
+        <option value="https://storage.googleapis.com/mapsdevsite/json/DP05_0001E">Total population</option>
+        <option value="https://storage.googleapis.com/mapsdevsite/json/DP02_0016E">Average family size</option>
+        <option value="https://storage.googleapis.com/mapsdevsite/json/DP03_0088E">Per-capita income</option>
+      </select>
+      </div>
+      <div id="legend">
+        <div id="census-min">min</div>
+        <div class="color-key"><span id="data-caret">&#x25c6;</span></div>
+        <div id="census-max">max</div>
+      </div>
+    </div>
+    <div id="data-box" class="nicebox">
+      <label id="data-label" for="data-value"></label>
+      <span id="data-value"></span>
+    </div>
+    <div class="nicebox" style="top: 70px; left: 540px; width: 300px; height: 30px;">
+  <input type="range" min="1" max="30" value="1" class="slider" id="myRange" onChange="updateTextInput(this.value);">
+  <output id="forecastDay" value="">+1 day forecast</output>
+</div>
+    <div id="map"></div>
+    <script>
+
+
+      var mapStyle = [{
+        'stylers': [{'visibility': 'off'}]
+      }, {
+        'featureType': 'landscape',
+        'elementType': 'geometry',
+        'stylers': [{'visibility': 'on'}, {'color': '#fcfcfc'}]
+      }, {
+        'featureType': 'water',
+        'elementType': 'geometry',
+        'stylers': [{'visibility': 'on'}, {'color': '#bfd4ff'}]
+      }];
+      var map, infoWindow;
+      var censusMin = Number.MAX_VALUE, censusMax = -Number.MAX_VALUE;
+
+
+
+      function initMap() {
+
+        // load the map
+        map = new google.maps.Map(document.getElementById('map'), {
+          center: {lat: 40, lng: -100},
+          zoom: 4,
+          styles: mapStyle
+
+
+        });
+
+        infoWindow = new google.maps.InfoWindow;
+
+
+        // Try HTML5 geolocation.
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(function(position) {
+            var pos = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            };
+
+            infoWindow.setPosition(pos);
+            infoWindow.setContent('Location found.');
+            infoWindow.open(map);
+
+            var bounds = new google.maps.LatLngBounds();
+            map.fitBounds(bounds);
+            var listener = google.maps.event.addListener(map, "idle", function() {
+               if (map.getZoom() > 16) map.setZoom(16);
+               google.maps.event.removeListener(listener);
+            });
+
+            map.setCenter(pos);
+          }, function() {
+            handleLocationError(true, infoWindow, map.getCenter());
+          });
+        } else {
+          // Browser doesn't support Geolocation
+          handleLocationError(false, infoWindow, map.getCenter());
+        }
+
+
+
+        map.data.loadGeoJson('https://storage.googleapis.com/mapsdevsite/json/google.json');
+
+
+
+
+     }
+
+
+
+
+
+      var slider = document.getElementById("myRange");
+      var output = document.getElementById("demo");
+      var forecastDay = document.getElementById("forecastDay");
+
+
+      output.innerHTML = slider.value; // Display the default slider value
+
+
+      // Update the current slider value (each time you drag the slider handle)
+      slider.oninput = function() {
+        output.innerHTML = this.value;
+      }
+
+
+      function updateTextInput(val) {
+          document.getElementById('forecastDay').value='+'.concat(val, ' days forecast');
+        }
+
+
+
+    </script>
+    <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAzkhf-ORo89KJxvc_A6rscoEbO3d-ByQM&callback=initMap">
+    </script>
+  </body>
+</html>
